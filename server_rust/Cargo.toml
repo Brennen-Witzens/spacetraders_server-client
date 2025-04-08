@@ -1,0 +1,14 @@
+[package]
+name = "Spacetraders"
+version = "0.0.1"
+edition = "2024"
+
+[dependencies]
+async-graphql = "7.0.16"
+async-graphql-actix-web = "7.0.16" # If you need to integrate into actix-web
+actix-web = "4.10.2"
+reqwest = { version= "0.12.15", features = ["json"]}
+thiserror = "2.0.12"
+serde = { version = "1.0.219", features = ["derive"]}
+serde_json = "1.0.140"
+dotenvy = "0.15.7"
