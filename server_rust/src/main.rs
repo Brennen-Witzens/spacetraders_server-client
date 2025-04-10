@@ -1,12 +1,13 @@
-mod models;
+mod schema;
 
 use actix_web::{
     App, HttpResponse, HttpServer, guard,
     web::{self, Data},
 };
-use async_graphql::{EmptySubscription, Schema, http::GraphiQLSource};
+use async_graphql::http::GraphiQLSource;
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
-use models::model::{BooksSchema, MutationRoot, QueryRoot};
+use schema::context::{Context, Schema, create_schema};
+use std::sync::Arc;
 
 // TODO:
 // 1. Get environment variables and commands setup
@@ -21,7 +22,7 @@ use models::model::{BooksSchema, MutationRoot, QueryRoot};
 //  - List Ships
 //  - Get Ship
 
-async fn index(schema: web::Data<BooksSchema>, req: GraphQLRequest) -> GraphQLResponse {
+async fn index(schema: web::Data<Schema>, req: GraphQLRequest) -> GraphQLResponse {
     schema.execute(req.into_inner()).await.into()
 }
 
@@ -30,11 +31,6 @@ async fn graphiql_playground() -> HttpResponse {
     HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
         .body(GraphiQLSource::build().endpoint("/").finish())
-}
-
-#[derive(Clone)]
-pub struct Context {
-    auth_token: String,
 }
 
 #[actix_web::main]
@@ -46,14 +42,13 @@ async fn main() -> std::io::Result<()> {
 
     let auth_token = std::env::var("ACCOUNT_TOKEN").expect("ACCOUNT_TOKEN expected to be set");
 
-    let ctx = Context { auth_token };
+    let context = Arc::new(Context { auth_token });
+    let schema = Arc::new(create_schema());
 
     HttpServer::new(move || {
-        let schema = Schema::new(QueryRoot, MutationRoot, EmptySubscription);
-
         App::new()
-            .app_data(Data::new(schema))
-            .app_data(ctx.clone())
+            .app_data(Data::new(schema.clone()))
+            .app_data(Data::new(context.clone()))
             .service(web::resource("/").guard(guard::Post()).to(index))
             .service(
                 web::resource("/")

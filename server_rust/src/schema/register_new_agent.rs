@@ -1,65 +1,5 @@
-use std::collections::HashMap;
-
-use actix_web::web::Json;
-use async_graphql::{
-    Context, EmptyMutation, EmptySubscription, Enum, ErrorExtensions, FieldError, ID, InputObject,
-    Object, Schema,
-};
+use async_graphql::{Enum, InputObject, Object};
 use serde::{Deserialize, Serialize};
-use serde_json::from_reader;
-use thiserror::Error;
-
-pub type BooksSchema = Schema<QueryRoot, MutationRoot, EmptySubscription>;
-
-// TODO:
-// 1. Need to get models setup for what the client should send
-// 2. Need to work on getting the OpenAPI spec side generated to be able to call
-// 3. Database setup?
-
-#[derive(Debug, Error)]
-pub enum MyError {
-    #[error("Could not find resource")]
-    NotFound,
-
-    #[error("ServerError")]
-    ServerError(String),
-
-    #[error("No Extensions")]
-    ErrorWithoutExtensions,
-}
-
-impl ErrorExtensions for MyError {
-    // lets define our base extensions
-    fn extend(&self) -> FieldError {
-        self.extend_with(|err, e| match err {
-            MyError::NotFound => e.set("code", "NOT_FOUND"),
-            MyError::ServerError(reason) => e.set("reason", reason.to_string()),
-            MyError::ErrorWithoutExtensions => {}
-        })
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct Book {
-    id: ID,
-    name: String,
-    author: String,
-}
-
-#[Object]
-impl Book {
-    async fn id(&self) -> &str {
-        &self.id
-    }
-
-    async fn name(&self) -> &str {
-        &self.name
-    }
-
-    async fn author(&self) -> &str {
-        &self.author
-    }
-}
 
 #[derive(InputObject)]
 pub struct NewUser {
@@ -68,20 +8,36 @@ pub struct NewUser {
     email: Option<String>,
 }
 
+impl NewUser {
+    pub fn symbol(&self) -> &str {
+        &self.symbol
+    }
+
+    pub fn faction(&self) -> &str {
+        &self.faction
+    }
+
+    pub fn email(&self) -> Option<&str> {
+        self.email.as_deref()
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RegisterNewUserResponse {
-    data: Data,
+    data: DataResponse,
 }
 
 #[Object]
 impl RegisterNewUserResponse {
-    async fn data(&self) -> &Data {
+    // This is the 'root' of the response that Spacetraders returns as an OpenAPI spec
+    // Since I'm mapping it via JSON, we need this root object
+    async fn data(&self) -> &DataResponse {
         &self.data
     }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Data {
+pub struct DataResponse {
     agent: Agent,
     contract: Contract,
     faction: Faction,
@@ -90,7 +46,7 @@ pub struct Data {
 }
 
 #[Object]
-impl Data {
+impl DataResponse {
     async fn agent(&self) -> &Agent {
         &self.agent
     }
@@ -461,74 +417,5 @@ impl Faction {
     }
     async fn is_recruiting(&self) -> bool {
         self.is_recruiting
-    }
-}
-
-pub struct QueryRoot;
-
-#[Object]
-impl QueryRoot {
-    async fn book(&self, _ctx: &Context<'_>) -> Book {
-        let book: Book = Book {
-            id: ID("0".to_string()),
-            name: "A book".to_string(),
-            author: "An unknown author".to_string(),
-        };
-        book
-    }
-}
-
-pub struct MutationRoot;
-
-#[Object]
-impl MutationRoot {
-    async fn register_new_user(
-        &self,
-        ctx: &Context<'_>,
-        user_data: NewUser,
-    ) -> Result<RegisterNewUserResponse, FieldError> {
-        let context = ctx.data::<crate::Context>()?;
-
-        let client = reqwest::Client::new();
-        let url = "https://api.spacetraders.io/v2/register";
-        //TODO: Make sure to not commit this :)
-        //Need to pass this via context
-        let bearer_auth = &context.auth_token;
-
-        let mut map = HashMap::new();
-        map.insert("symbol", user_data.symbol);
-        map.insert("faction", user_data.faction);
-        if let Some(email) = user_data.email {
-            map.insert("email", email);
-            let res = client
-                .post(url)
-                .header("Content-Type", "application/json")
-                .header("Authorization", bearer_auth)
-                .json(&map)
-                .send()
-                .await
-                .map_err(|err| MyError::ServerError(err.to_string()).extend())?;
-
-            let text = res
-                .json::<RegisterNewUserResponse>()
-                .await
-                .map_err(|err| MyError::ServerError(err.to_string()).extend())?;
-            return Ok(text);
-        }
-
-        let res = client
-            .post(url)
-            .header("Content-Type", "application/json")
-            .header("Authorization", bearer_auth)
-            .json(&map)
-            .send()
-            .await
-            .map_err(|err| MyError::ServerError(err.to_string()).extend())?;
-
-        let text = res
-            .json::<RegisterNewUserResponse>()
-            .await
-            .map_err(|err| MyError::ServerError(err.to_string()).extend())?;
-        Ok(text)
     }
 }
