@@ -1,6 +1,13 @@
 use async_graphql::{Enum, InputObject, Object};
 use serde::{Deserialize, Serialize};
 
+// TODO:
+// 1. Clean up values
+// 2. Properly set values (some strings are date time strings and should be date times)
+// 3. Get full graphql objects setup for these
+// 4. Work on documentation of these in some fashion
+// 5. Stretch Goal - database objects/architecture plans
+
 #[derive(InputObject)]
 pub struct NewUser {
     symbol: String,

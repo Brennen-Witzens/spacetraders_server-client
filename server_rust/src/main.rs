@@ -40,9 +40,9 @@ async fn main() -> std::io::Result<()> {
     // Get env files
     let _ = dotenvy::dotenv().expect("Failed to load .env file");
 
-    let auth_token = std::env::var("ACCOUNT_TOKEN").expect("ACCOUNT_TOKEN expected to be set");
+    let account_token = std::env::var("ACCOUNT_TOKEN").expect("ACCOUNT_TOKEN expected to be set");
 
-    let context = Arc::new(Context { auth_token });
+    let context = Arc::new(Context { account_token });
     let schema = Arc::new(create_schema());
 
     HttpServer::new(move || {
