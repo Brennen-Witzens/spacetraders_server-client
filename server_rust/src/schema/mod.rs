@@ -1,5 +1,9 @@
+pub mod agent;
 pub(crate) mod context;
+pub mod contract;
+pub mod faction;
 pub mod model;
-pub mod register_new_agent;
 pub mod mutation_root;
+pub mod payment;
 pub mod query_root;
+pub mod ship;

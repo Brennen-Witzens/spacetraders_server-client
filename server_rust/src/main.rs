@@ -12,6 +12,7 @@ use std::sync::Arc;
 // TODO:
 // 1. Get environment variables and commands setup
 // 2. Figure out an "architecture" type to build this around
+//      - Work on organizing structs and properly set up Enums and DateTimes.
 // 3. Design pattern look-ups
 // 4. Basic endpoint setup for now to get data "displayed"
 //  - Get Agent
@@ -42,13 +43,12 @@ async fn main() -> std::io::Result<()> {
 
     let account_token = std::env::var("ACCOUNT_TOKEN").expect("ACCOUNT_TOKEN expected to be set");
 
-    let context = Arc::new(Context { account_token });
-    let schema = Arc::new(create_schema());
+    let context = Context { account_token };
+    let schema = Arc::new(create_schema(context));
 
     HttpServer::new(move || {
         App::new()
-            .app_data(Data::new(schema.clone()))
-            .app_data(Data::new(context.clone()))
+            .app_data(web::Data::from(schema.clone()))
             .service(web::resource("/").guard(guard::Post()).to(index))
             .service(
                 web::resource("/")
