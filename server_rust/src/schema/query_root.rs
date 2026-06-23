@@ -4,6 +4,10 @@ use super::{agent::GetAgentResponse, context::API_URL, model::MyError};
 
 pub struct QueryRoot;
 
+// TODO:
+// Each endpoint should call a function on a client or object that then does the actual request to
+// the spacetraders endpoints. And all the resolver does is convert it into a GraphQL object
+// it'll also help with not having to worry about creating multiple clients
 #[Object]
 impl QueryRoot {
     async fn hello_world(&self) -> Result<String, FieldError> {

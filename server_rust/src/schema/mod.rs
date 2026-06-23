@@ -1,4 +1,5 @@
 pub mod agent;
+pub mod chart;
 pub(crate) mod context;
 pub mod contract;
 pub mod faction;
@@ -7,3 +8,4 @@ pub mod mutation_root;
 pub mod payment;
 pub mod query_root;
 pub mod ship;
+pub mod waypoint;
